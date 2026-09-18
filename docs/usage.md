@@ -12,6 +12,7 @@ txcript list                             # local sessions across every harness
     [--cwd <dir>]                         #   only sessions recorded under <dir>
     [-n <N>]                              #   at most N sessions
     [--since <when>] [--until <when>]     #   bound the session start time
+    [--format human|json]                 #   choose output format
 txcript continue <id>[#range]            # continue <id>, then launch its harness
     [--with <harness>]                    #   ...continuing in <harness> instead
     [--from <harness>]                    #   scope the id lookup to one harness
@@ -30,7 +31,7 @@ txcript export <id>[#range]              # write a session as a Simple document
     [--out <file>]                        #   write to <file> instead of stdout
 ```
 
-A session id is any unambiguous prefix of the full id, or the session's exact title. `txcript resume` is an alias for `continue`. `--since` and `--until` take RFC 3339 timestamps or bare `YYYY-MM-DD` dates.
+A session id is any unambiguous prefix of the full id, or the session's exact title. `txcript resume` is an alias for `continue`. `--since` and `--until` take RFC 3339 timestamps or bare `YYYY-MM-DD` dates. `list --format json` emits machine-readable records with the harness, id, start time, backing-file modification time (`updated_at`), working directory, title/model when available, and backing path for file-based sessions. Human output remains the default.
 
 `continue` writes the session where the target harness keeps its sessions, then launches that harness on it, handing over the terminal:
 

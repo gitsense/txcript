@@ -7,6 +7,7 @@
 //!     [--cwd <dir>]                         #   only sessions recorded under <dir>
 //!     [-n <N>]                              #   at most N sessions
 //!     [--since <when>] [--until <when>]     #   bound the session start time
+//!     [--format human|json]                 #   choose output format
 //! txcript continue <id>[#range]         # continue <id>, then launch the harness
 //!     [--with <harness>]                    #   ...continuing in <harness> instead
 //!     [--from <harness>]                    #   scope the id lookup to one harness
@@ -53,7 +54,9 @@ use std::io::IsTerminal as _;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
+use chrono::{DateTime, Utc};
 use clap::{CommandFactory, Parser, Subcommand};
+use serde::Serialize;
 use txcript::harness::{amp, chatgpt, claude_chat, simple};
 use txcript::{Codec, Common, HarnessId, Store, TextCodec, Transcript, local};
 
@@ -134,6 +137,9 @@ pub enum SessionCommand {
         /// YYYY-MM-DD, a bare date meaning the end of that local day)
         #[arg(long, value_name = "WHEN", value_parser = parse_until)]
         until: Option<chrono::DateTime<chrono::Utc>>,
+        /// Output format: human (default) or json
+        #[arg(long, value_name = "FORMAT", default_value = "human")]
+        format: String,
     },
     /// Continue a session, then launch its harness
     ///
@@ -376,8 +382,9 @@ pub fn run_session(command: SessionCommand, options: &Options) -> Result<ExitCod
             limit,
             since,
             until,
+            format,
         } => {
-            cmd_list(from, cwd.as_deref(), limit, since, until)?;
+            cmd_list(from, cwd.as_deref(), limit, since, until, &format)?;
             Ok(ExitCode::SUCCESS)
         }
         SessionCommand::Continue {
@@ -953,13 +960,36 @@ mod identity_tests {
     }
 }
 
+#[derive(Debug, Serialize)]
+struct ListedSession {
+    harness: String,
+    id: String,
+    started_at: DateTime<Utc>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    updated_at: Option<DateTime<Utc>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    cwd: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    model: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    path: Option<String>,
+}
+
 fn cmd_list(
     from: Option<HarnessId>,
     cwd: Option<&std::path::Path>,
     limit: Option<usize>,
     since: Option<chrono::DateTime<chrono::Utc>>,
     until: Option<chrono::DateTime<chrono::Utc>>,
+    format: &str,
 ) -> Result<(), String> {
+    if !matches!(format, "human" | "json") {
+        return Err(format!(
+            "unsupported list format `{format}` (use `human` or `json`)"
+        ));
+    }
     let sessions = discover_with_spinner(from)?;
     let listed: Vec<_> = sessions
         .iter()
@@ -970,6 +1000,25 @@ fn cmd_list(
         })
         .take(limit.unwrap_or(usize::MAX))
         .collect();
+    if format == "json" {
+        let output: Vec<ListedSession> = listed
+            .iter()
+            .map(|s| ListedSession {
+                harness: s.harness.to_string(),
+                id: s.meta.id.clone(),
+                started_at: s.meta.timestamp,
+                updated_at: s.updated_at,
+                cwd: s.meta.cwd.clone(),
+                title: s.meta.title.clone(),
+                model: s.meta.model.clone(),
+                path: s.source_path().map(|p| p.display().to_string()),
+            })
+            .collect();
+        serde_json::to_writer_pretty(std::io::stdout().lock(), &output)
+            .map_err(|e| format!("writing JSON list: {e}"))?;
+        println!();
+        return Ok(());
+    }
     if listed.is_empty() {
         let scope = cwd.map_or(String::new(), |d| format!(" for {}", d.display()));
         let when = match (since, until) {

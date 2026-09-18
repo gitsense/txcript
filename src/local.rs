@@ -573,6 +573,12 @@ impl Group<'_> {
 }
 
 impl Session {
+    /// The file behind a file-backed session, when the backend has one.
+    #[must_use]
+    pub fn source_path(&self) -> Option<&Path> {
+        self.path().map(PathBuf::as_path)
+    }
+
     /// The file behind a file-backed session.
     // Option for symmetry with `id`: without the SQLite features every
     // session is file-backed and the None arm compiles out.
