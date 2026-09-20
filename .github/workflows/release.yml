@@ -2,8 +2,9 @@ name: release
 
 # Publishes a version tag: the library to crates.io, the WASM package to npm,
 # CLI binaries for every target, and the GitHub Release with notes from the
-# CHANGELOG.md section. The release is created only after every publish
-# succeeded, so a release page never points at a package that isn't there.
+# CHANGELOG.md section. The GitHub Release is independently gated on binary
+# packaging; registry publishing is useful but not required for downloadable
+# CLI binaries.
 #
 # Tags come from prepare-release.yml. A hand-pushed `vX.Y.Z` tag works too,
 # as long as the manifests and changelog already carry that version.
@@ -100,7 +101,9 @@ jobs:
 
   github-release:
     name: Create GitHub Release
-    needs: [verify, crates-io, npm, binaries]
+    # GitHub binaries are independently releasable; registry publication may
+    # require credentials that are not needed to make the CLI downloadable.
+    needs: [verify, binaries]
     runs-on: ubuntu-latest
     permissions:
       contents: write

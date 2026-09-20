@@ -19,7 +19,7 @@
   <a href="https://crates.io/crates/txcript"><img src="https://img.shields.io/crates/v/txcript?logo=rust&color=4c71f2" alt="crates.io"></a>
   <a href="https://www.npmjs.com/package/txcript"><img src="https://img.shields.io/npm/v/txcript?logo=npm&color=4c71f2" alt="npm"></a>
   <a href="https://docs.rs/txcript"><img src="https://img.shields.io/docsrs/txcript?logo=docsdotrs" alt="docs.rs"></a>
-  <a href="https://github.com/skillsynchq/txcript/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/skillsynchq/txcript/ci.yml?branch=main&logo=github&label=ci" alt="CI"></a>
+  <a href="https://github.com/gitsense/txcript/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/gitsense/txcript/ci.yml?branch=main&logo=github&label=ci" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-555" alt="License"></a>
 </p>
 
@@ -35,7 +35,7 @@ Build session search, viewers, and editors against one transcript model. txcript
 
 ## Try the CLI
 
-Download a binary for macOS, Linux, or Windows from [Releases](https://github.com/skillsynchq/txcript/releases), or install from source with Rust 1.96 or newer:
+Download a ready-to-run binary for macOS, Linux, or Windows from [Releases](https://github.com/gitsense/txcript/releases). No Rust toolchain is required. Developers can alternatively install from source with Rust 1.96 or newer:
 
 ```sh
 cargo install --git https://github.com/gitsense/txcript txcript-cli --locked
@@ -162,7 +162,7 @@ Conversion carries conversation history. The destination supplies its own system
 - [Transcript formats](docs/formats/README.md): storage layouts, mappings, and limitations, with sources and reverse-engineering notes.
 - [Development](docs/usage.md#development) and [test guide](tests/README.md).
 - [Contributing](CONTRIBUTING.md) · [Report a security vulnerability](SECURITY.md).
-- [Changelog](CHANGELOG.md) · [Report an issue](https://github.com/skillsynchq/txcript/issues).
+- [Changelog](CHANGELOG.md) · [Report an issue](https://github.com/gitsense/txcript/issues).
 
 ## License
 
