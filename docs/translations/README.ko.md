@@ -36,7 +36,7 @@ txcript는 에이전트 세션을 변환하는 라이브러리입니다. Claude 
 [릴리스](https://github.com/skillsynchq/txcript/releases)에서 macOS, Linux, Windows용 바이너리를 내려받거나, Rust 1.96 이상으로 소스에서 설치하세요.
 
 ```sh
-cargo install --git https://github.com/skillsynchq/txcript txcript-cli --locked
+cargo install --git https://github.com/gitsense/txcript txcript-cli --locked
 ```
 
 Claude Code 세션을 찾아 Codex에서 이어 가세요.

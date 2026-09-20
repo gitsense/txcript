@@ -36,7 +36,7 @@ Entwickle Suchfunktionen, Ansichten und Editoren für Sitzungen auf Basis eines 
 Lade eine Binärdatei für macOS, Linux oder Windows von der [Releases-Seite](https://github.com/skillsynchq/txcript/releases) herunter, oder installiere aus dem Quellcode mit Rust 1.96 oder neuer:
 
 ```sh
-cargo install --git https://github.com/skillsynchq/txcript txcript-cli --locked
+cargo install --git https://github.com/gitsense/txcript txcript-cli --locked
 ```
 
 Finde eine Claude-Code-Sitzung und setze sie in Codex fort:

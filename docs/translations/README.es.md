@@ -36,7 +36,7 @@ Crea buscadores, visores y editores de sesiones sobre un único modelo de transc
 Descarga un binario para macOS, Linux o Windows desde [Releases](https://github.com/skillsynchq/txcript/releases), o instala desde el código fuente con Rust 1.96 o posterior:
 
 ```sh
-cargo install --git https://github.com/skillsynchq/txcript txcript-cli --locked
+cargo install --git https://github.com/gitsense/txcript txcript-cli --locked
 ```
 
 Busca una sesión de Claude Code y continúala en Codex:

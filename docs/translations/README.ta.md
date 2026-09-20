@@ -36,7 +36,7 @@ txcript என்பது ஏஜென்ட் அமர்வுகளை ம
 macOS, Linux அல்லது Windows-க்கான இயங்கும் கோப்பை [வெளியீடுகள் பக்கத்திலிருந்து](https://github.com/skillsynchq/txcript/releases) பதிவிறக்கவும். அல்லது Rust 1.96 அல்லது அதற்குப் பிந்தைய பதிப்பைப் பயன்படுத்தி மூலக் குறியீட்டிலிருந்து நிறுவவும்:
 
 ```sh
-cargo install --git https://github.com/skillsynchq/txcript txcript-cli --locked
+cargo install --git https://github.com/gitsense/txcript txcript-cli --locked
 ```
 
 Claude Code அமர்வைக் கண்டறிந்து Codex-இல் தொடருங்கள்:

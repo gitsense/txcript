@@ -36,7 +36,7 @@ Crea strumenti per cercare, visualizzare e modificare sessioni usando un unico m
 Scarica un binario per macOS, Linux o Windows dalle [release](https://github.com/skillsynchq/txcript/releases), oppure installa dai sorgenti con Rust 1.96 o successivo:
 
 ```sh
-cargo install --git https://github.com/skillsynchq/txcript txcript-cli --locked
+cargo install --git https://github.com/gitsense/txcript txcript-cli --locked
 ```
 
 Trova una sessione Claude Code e proseguila in Codex:
