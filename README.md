@@ -7,6 +7,10 @@
 
 <p align="center">Continue your conversation in another coding agent.</p>
 
+> **GitSense fork notice:** GitSense maintains this fork with additional
+> machine-readable session metadata support used by GitSense Chat. These changes
+> are intended to be contributed back to the upstream txcript project.
+
 <p align="center">
   English | <a href="docs/translations/README.ja.md">日本語</a> | <a href="docs/translations/README.zh-CN.md">简体中文</a> | <a href="docs/translations/README.zh-TW.md">繁體中文</a> | <a href="docs/translations/README.ko.md">한국어</a> | <a href="docs/translations/README.de.md">Deutsch</a> | <a href="docs/translations/README.es.md">Español</a> | <a href="docs/translations/README.fr.md">Français</a> | <a href="docs/translations/README.it.md">Italiano</a> | <a href="docs/translations/README.pt-BR.md">Português (Brasil)</a> | <a href="docs/translations/README.ru.md">Русский</a> | <a href="docs/translations/README.mr.md">मराठी</a> | <a href="docs/translations/README.ta.md">தமிழ்</a>
 </p>
@@ -20,10 +24,6 @@
 </p>
 
 txcript is a library for converting agent sessions. Start a conversation in Claude Code and continue it in Codex, carrying over messages, reasoning, and tool history where the target supports them.
-
-> **GitSense fork notice:** GitSense maintains this fork with additional
-> machine-readable session metadata support used by GitSense Chat. These changes
-> are intended to be contributed back to the upstream txcript project.
 
 Build session search, viewers, and editors against one transcript model. txcript handles the agent-specific formats, with a Rust API, a JavaScript package, and a CLI.
 
