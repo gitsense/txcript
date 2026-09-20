@@ -36,7 +36,7 @@ txcript 是用來轉換代理工作階段的函式庫。在 Claude Code 中開�
 從[發行頁面](https://github.com/skillsynchq/txcript/releases)下載適用於 macOS、Linux 或 Windows 的執行檔，或使用 Rust 1.96 以上版本從原始碼安裝：
 
 ```sh
-cargo install --git https://github.com/skillsynchq/txcript txcript-cli --locked
+cargo install --git https://github.com/gitsense/txcript txcript-cli --locked
 ```
 
 找到一個 Claude Code 工作階段，並在 Codex 中繼續：

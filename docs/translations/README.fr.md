@@ -36,7 +36,7 @@ Créez des outils de recherche, de lecture et d'édition de sessions à partir d
 Téléchargez un binaire pour macOS, Linux ou Windows depuis les [versions publiées](https://github.com/skillsynchq/txcript/releases), ou installez depuis les sources avec Rust 1.96 ou une version ultérieure :
 
 ```sh
-cargo install --git https://github.com/skillsynchq/txcript txcript-cli --locked
+cargo install --git https://github.com/gitsense/txcript txcript-cli --locked
 ```
 
 Trouvez une session Claude Code et poursuivez-la dans Codex :

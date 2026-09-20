@@ -36,7 +36,7 @@ txcript ही एजंटची सेशन रूपांतरित क�
 [रिलीज पृष्ठावरून](https://github.com/skillsynchq/txcript/releases) macOS, Linux किंवा Windows साठी तयार बायनरी डाउनलोड करा, किंवा Rust 1.96 किंवा त्यानंतरची आवृत्ती वापरून सोर्समधून इन्स्टॉल करा:
 
 ```sh
-cargo install --git https://github.com/skillsynchq/txcript txcript-cli --locked
+cargo install --git https://github.com/gitsense/txcript txcript-cli --locked
 ```
 
 Claude Code मधील सेशन शोधा आणि Codex मध्ये पुढे सुरू करा:

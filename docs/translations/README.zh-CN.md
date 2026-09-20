@@ -36,7 +36,7 @@ txcript 是一个用于转换代理会话的库。在 Claude Code 中开始对�
 从[发布页面](https://github.com/skillsynchq/txcript/releases)下载适用于 macOS、Linux 或 Windows 的二进制文件，或使用 Rust 1.96 及以上版本从源码安装：
 
 ```sh
-cargo install --git https://github.com/skillsynchq/txcript txcript-cli --locked
+cargo install --git https://github.com/gitsense/txcript txcript-cli --locked
 ```
 
 找到一个 Claude Code 会话，并在 Codex 中继续：

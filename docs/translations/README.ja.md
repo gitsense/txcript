@@ -36,7 +36,7 @@ txcript はエージェントのセッションを変換するライブラリで
 [リリース](https://github.com/skillsynchq/txcript/releases)から macOS、Linux、Windows 向けのバイナリをダウンロードするか、Rust 1.96 以降でソースからインストールしてください。
 
 ```sh
-cargo install --git https://github.com/skillsynchq/txcript txcript-cli --locked
+cargo install --git https://github.com/gitsense/txcript txcript-cli --locked
 ```
 
 Claude Code のセッションを探し、Codex で続けます。

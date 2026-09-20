@@ -38,7 +38,7 @@ Build session search, viewers, and editors against one transcript model. txcript
 Download a binary for macOS, Linux, or Windows from [Releases](https://github.com/skillsynchq/txcript/releases), or install from source with Rust 1.96 or newer:
 
 ```sh
-cargo install --git https://github.com/skillsynchq/txcript txcript-cli --locked
+cargo install --git https://github.com/gitsense/txcript txcript-cli --locked
 ```
 
 Find a Claude Code session and continue it in Codex:

@@ -36,7 +36,7 @@
 Скачайте готовый исполняемый файл для macOS, Linux или Windows со [страницы релизов](https://github.com/skillsynchq/txcript/releases) или установите из исходного кода с Rust 1.96 или новее:
 
 ```sh
-cargo install --git https://github.com/skillsynchq/txcript txcript-cli --locked
+cargo install --git https://github.com/gitsense/txcript txcript-cli --locked
 ```
 
 Найдите сессию Claude Code и продолжите её в Codex:
