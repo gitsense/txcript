@@ -5,7 +5,7 @@ edition = "2024"
 rust-version = "1.96"
 description = "CLI for listing, searching, and continuing txcript sessions."
 license = "Apache-2.0"
-repository = "https://github.com/skillsynchq/txcript"
+repository = "https://github.com/gitsense/txcript"
 # Not published: crates.io ships only the txcript library. Install the CLI
 # from git (`cargo install --git … txcript-cli`) or a local checkout.
 publish = false
@@ -65,7 +65,7 @@ workspace = true
 
 # Prebuilt binaries are attached to every GitHub Release, one archive per
 # target with the executable at the archive root. Install without compiling:
-#   cargo binstall --git https://github.com/skillsynchq/txcript txcript-cli
+#   cargo binstall --git https://github.com/gitsense/txcript txcript-cli
 [package.metadata.binstall]
 pkg-url = "{ repo }/releases/download/v{ version }/txcript-{ target }{ archive-suffix }"
 bin-dir = "{ bin }{ binary-ext }"

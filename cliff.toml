@@ -9,7 +9,7 @@ trim = true
 # file stays self-contained without a reference list at the bottom.
 body = """
 ## [{{ version | trim_start_matches(pat="v") }}]\
-{% if previous.version %}(https://github.com/skillsynchq/txcript/compare/{{ previous.version }}...{{ version }}){% endif %} \
+{% if previous.version %}(https://github.com/gitsense/txcript/compare/{{ previous.version }}...{{ version }}){% endif %} \
 - {{ timestamp | date(format="%Y-%m-%d") }}
 {% for group, commits in commits | group_by(attribute="group") %}
 ### {{ group | striptags | trim }}
@@ -20,7 +20,7 @@ body = """
 """
 # Squash merges leave "(#N)" on the subject; turn it into a PR link.
 postprocessors = [
-  { pattern = '\(#([0-9]+)\)', replace = "([#${1}](https://github.com/skillsynchq/txcript/pull/${1}))" },
+  { pattern = '\(#([0-9]+)\)', replace = "([#${1}](https://github.com/gitsense/txcript/pull/${1}))" },
 ]
 
 [git]
