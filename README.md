@@ -21,6 +21,10 @@
 
 txcript is a library for converting agent sessions. Start a conversation in Claude Code and continue it in Codex, carrying over messages, reasoning, and tool history where the target supports them.
 
+> **GitSense fork notice:** GitSense maintains this fork with additional
+> machine-readable session metadata support used by GitSense Chat. These changes
+> are intended to be contributed back to the upstream txcript project.
+
 Build session search, viewers, and editors against one transcript model. txcript handles the agent-specific formats, with a Rust API, a JavaScript package, and a CLI.
 
 [Try the CLI](#try-the-cli) · [Use the library](#use-the-library) · [Supported agents](#supported-agents) · [Documentation](#documentation)
