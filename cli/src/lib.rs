@@ -69,6 +69,7 @@ mod graphics;
 #[cfg(feature = "mcp")]
 pub mod mcp;
 mod pager;
+mod tail;
 mod view;
 
 pub const HARNESSES: &str = "harnesses: claude_code, claude_chat, chatgpt, codex, opencode, pi, campfire, cursor, cursor_desktop, grok, fx, hermes, \
@@ -234,6 +235,24 @@ pub enum SessionCommand {
         /// Print the human-facing view directly instead of opening a pager
         #[arg(long)]
         no_pager: bool,
+    },
+    /// Observe latest persisted assistant text from a bounded JSONL suffix (no imports)
+    Tail {
+        /// Exact session-log path; bypasses session discovery
+        #[arg(value_hint = clap::ValueHint::FilePath)]
+        source: PathBuf,
+        /// Log format: pi or codex
+        #[arg(long, value_parser = ["pi", "codex"])]
+        from: String,
+        /// Maximum initial read and buffered record size
+        #[arg(long, default_value_t = 65536)]
+        bytes: usize,
+        /// Follow appended records, emitting changed messages as JSON lines
+        #[arg(long)]
+        follow: bool,
+        /// Poll cadence (minimum 100 milliseconds)
+        #[arg(long, default_value_t = 1000)]
+        interval_ms: u64,
     },
     /// Write a session as a Simple interchange document
     ///
@@ -415,6 +434,13 @@ pub fn run_session(command: SessionCommand, options: &Options) -> Result<ExitCod
             from,
             no_pager,
         } => view::cmd_view(&source, from, no_pager),
+        SessionCommand::Tail {
+            source,
+            from,
+            bytes,
+            follow,
+            interval_ms,
+        } => tail::run(&source, &from, bytes, follow, interval_ms),
         SessionCommand::Export { source, from, out } => {
             export::cmd_export(&source, from, out.as_deref())
         }

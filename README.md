@@ -63,6 +63,16 @@ Move `run.json` to another machine and continue it with `txcript continue ./run.
 
 Run `txcript mcp` to let an MCP client list, search, and read past sessions. Its tools are read-only. See the [CLI reference](docs/usage.md#cli) for filters, message ranges, and shell integration.
 
+### Observe the latest persisted message (GitSense fork)
+
+```sh
+txcript tail /absolute/session.jsonl --from pi --bytes 65536 --follow
+txcript tail /absolute/rollout.jsonl --from codex --bytes 65536 --follow
+```
+
+Read a bounded suffix, then follow appended records as changed-message JSONL.
+No imports, conversions, or full-session scan. See [tail semantics and limits](docs/tail.md).
+
 ## Use the library
 
 ### Rust
