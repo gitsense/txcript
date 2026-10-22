@@ -31,7 +31,10 @@ struct Update {
 // Unix ctime as well as mtime so restored mtimes do not hide same-size edits.
 #[derive(Debug, PartialEq)]
 struct FileStamp {
+    #[cfg(not(windows))]
     identity: (u64, u64),
+    #[cfg(windows)]
+    identity: Option<same_file::Handle>,
     len: u64,
     modified: Option<SystemTime>,
     #[cfg(unix)]
@@ -39,14 +42,39 @@ struct FileStamp {
 }
 
 impl FileStamp {
+    fn from_path(path: &Path) -> std::io::Result<Self> {
+        // Windows metadata does not expose a stable file ID through stable
+        // std APIs. Query it from the same handle used for metadata instead.
+        #[cfg(windows)]
+        {
+            Self::from_file(&File::open(path)?)
+        }
+        #[cfg(not(windows))]
+        {
+            Ok(Self::from_metadata(&std::fs::metadata(path)?))
+        }
+    }
+
+    fn from_file(file: &File) -> std::io::Result<Self> {
+        let stamp = Self::from_metadata(&file.metadata()?);
+        #[cfg(windows)]
+        let stamp = Self {
+            identity: Some(same_file::Handle::from_file(file.try_clone()?)?),
+            ..stamp
+        };
+        Ok(stamp)
+    }
+
     fn from_metadata(meta: &std::fs::Metadata) -> Self {
         #[cfg(unix)]
         use std::os::unix::fs::MetadataExt;
         Self {
             #[cfg(unix)]
             identity: (meta.dev(), meta.ino()),
-            #[cfg(not(unix))]
+            #[cfg(not(any(unix, windows)))]
             identity: (0, 0),
+            #[cfg(windows)]
+            identity: None,
             len: meta.len(),
             modified: meta.modified().ok(),
             #[cfg(unix)]
@@ -59,7 +87,6 @@ struct Reader {
     offset: u64,
     pending: Vec<u8>,
     dropping: bool,
-    identity: Option<(u64, u64)>,
     stamp: Option<FileStamp>,
     latest: Option<Message>,
     #[cfg(test)]
@@ -74,7 +101,6 @@ impl Reader {
             offset: 0,
             pending: Vec::new(),
             dropping: false,
-            identity: None,
             stamp: None,
             latest: None,
             #[cfg(test)]
@@ -85,37 +111,39 @@ impl Reader {
     }
 
     fn has_changed(&self, path: &Path) -> Result<bool, String> {
-        let meta = std::fs::metadata(path).map_err(|e| format!("stat {}: {e}", path.display()))?;
-        let stamp = FileStamp::from_metadata(&meta);
+        let stamp =
+            FileStamp::from_path(path).map_err(|e| format!("stat {}: {e}", path.display()))?;
         // If the platform cannot supply mtime, never silently suppress reads.
         Ok(stamp.modified.is_none() || self.stamp.as_ref() != Some(&stamp))
     }
 
-    // Called only after has_changed: no open, message clone, or decode on the
-    // idle path. Re-stat the opened descriptor to handle replacement races.
+    // Called only after has_changed: no content read, message clone, or decode
+    // on the idle path (Unix also avoids opening). Re-stat the opened
+    // descriptor to handle replacement races.
     fn poll(&mut self, path: &Path, harness: &str, budget: usize) -> Result<Update, String> {
         let mut file = File::open(path).map_err(|e| format!("open {}: {e}", path.display()))?;
         #[cfg(test)]
         {
             self.file_opens += 1;
         }
-        let meta = file.metadata().map_err(|e| e.to_string())?;
-        let stamp = FileStamp::from_metadata(&meta);
-        let identity = stamp.identity;
+        let stamp = FileStamp::from_file(&file).map_err(|e| e.to_string())?;
         let len = stamp.len;
         let same_size_rewrite = len == self.offset
             && self
                 .stamp
                 .as_ref()
                 .is_some_and(|previous| previous != &stamp);
-        let reset = self.identity != Some(identity) || len < self.offset || same_size_rewrite;
+        let replaced = self
+            .stamp
+            .as_ref()
+            .is_none_or(|previous| previous.identity != stamp.identity);
+        let reset = replaced || len < self.offset || same_size_rewrite;
         if reset {
             self.offset = 0;
             self.pending.clear();
             self.latest = None;
             self.dropping = false;
         }
-        self.identity = Some(identity);
         // A fast-growing log must not make a single poll unbounded either.
         let start = self.offset.max(len.saturating_sub(budget as u64));
         if start > self.offset {
@@ -391,6 +419,28 @@ mod tests {
         );
     }
     #[test]
+    fn larger_replacement_discards_old_partial_record_and_rescans() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("log.jsonl");
+        let old = format!("{}{{\"type\":", pi("old"));
+        std::fs::write(&path, &old).unwrap();
+        let mut reader = Reader::new();
+        reader.poll(&path, "pi", 4096).unwrap();
+        assert!(!reader.pending.is_empty());
+
+        let replacement = directory.path().join("next.jsonl");
+        // The new assistant record ends before the previous cursor, while
+        // unrelated padding makes the replacement larger than the old file.
+        let new = format!("{}{}\n", pi("new"), " ".repeat(old.len()));
+        std::fs::write(&replacement, new).unwrap();
+        std::fs::rename(&replacement, &path).unwrap();
+        assert!(reader.has_changed(&path).unwrap());
+        let update = reader.poll(&path, "pi", 4096).unwrap();
+        assert_eq!(update.message.unwrap().text, "new");
+        assert!(reader.pending.is_empty());
+        assert!(!reader.has_changed(&path).unwrap());
+    }
+    #[test]
     fn utf8_fragment_is_not_decoded_until_record_completes() {
         let mut file = tempfile::NamedTempFile::new().unwrap();
         let mut reader = Reader::new();
@@ -498,6 +548,94 @@ mod tests {
                 .is_none()
         );
     }
+    /// Run explicitly with `cargo test -p txcript-cli --release
+    /// tail::tests::performance -- --ignored --nocapture`.
+    #[test]
+    #[ignore = "explicit filesystem performance measurement"]
+    fn performance() {
+        use std::time::Instant;
+
+        const MIRRORS: usize = 48;
+        const IDLE_ROUNDS: usize = 1000;
+        const APPEND_ROUNDS: usize = 100;
+        const BUDGET: usize = 65536;
+        let initial = pi(&"x".repeat(32 * 1024));
+        let mut mirrors = Vec::new();
+        let started = Instant::now();
+        for _ in 0..MIRRORS {
+            let mut file = tempfile::NamedTempFile::new().unwrap();
+            // A sparse historical prefix makes full-log reads detectable
+            // without consuming hundreds of MiB of physical disk space.
+            file.as_file().set_len(16 * 1024 * 1024).unwrap();
+            file.seek(SeekFrom::End(0)).unwrap();
+            file.write_all(b"\n").unwrap();
+            file.write_all(initial.as_bytes()).unwrap();
+            mirrors.push((file, Reader::new()));
+        }
+        let setup = started.elapsed();
+        let started = Instant::now();
+        for (file, reader) in &mut mirrors {
+            assert!(reader.has_changed(file.path()).unwrap());
+            assert!(
+                reader
+                    .poll(file.path(), "pi", BUDGET)
+                    .unwrap()
+                    .message
+                    .is_some()
+            );
+            assert_eq!(reader.bytes_read, BUDGET + 1);
+        }
+        let initial_time = started.elapsed();
+        let started = Instant::now();
+        for _ in 0..IDLE_ROUNDS {
+            for (file, reader) in &mirrors {
+                assert!(!reader.has_changed(file.path()).unwrap());
+                assert_eq!(reader.file_opens, 1);
+                assert_eq!(reader.bytes_read, BUDGET + 1);
+            }
+        }
+        let idle_time = started.elapsed();
+        let mut append_time = Duration::ZERO;
+        let mut appended_bytes = 0;
+        for round in 0..APPEND_ROUNDS {
+            let line = pi(&format!("response {round}: {}", "x".repeat(1024)));
+            appended_bytes += line.len();
+            for (file, reader) in &mut mirrors {
+                file.write_all(line.as_bytes()).unwrap();
+                let started = Instant::now();
+                assert!(reader.has_changed(file.path()).unwrap());
+                let update = reader.poll(file.path(), "pi", BUDGET).unwrap();
+                append_time += started.elapsed();
+                assert!(
+                    update
+                        .message
+                        .unwrap()
+                        .text
+                        .starts_with(&format!("response {round}:"))
+                );
+            }
+        }
+        for (_, reader) in &mirrors {
+            assert_eq!(reader.file_opens, 1 + APPEND_ROUNDS);
+            assert_eq!(reader.bytes_read, BUDGET + 1 + appended_bytes);
+        }
+        println!("{MIRRORS} mirrors, each with 16 MiB history; setup: {setup:?}");
+        println!(
+            "initial bounded scan: {:.2} us/mirror",
+            initial_time.as_secs_f64() * 1e6 / MIRRORS as f64
+        );
+        println!(
+            "idle: {:.2} us/poll ({} polls, zero content opens/reads)",
+            idle_time.as_secs_f64() * 1e6 / (MIRRORS * IDLE_ROUNDS) as f64,
+            MIRRORS * IDLE_ROUNDS
+        );
+        println!(
+            "append: {:.2} us/poll ({} polls, only appended bytes read)",
+            append_time.as_secs_f64() * 1e6 / (MIRRORS * APPEND_ROUNDS) as f64,
+            MIRRORS * APPEND_ROUNDS
+        );
+    }
+
     #[test]
     fn codex_uses_protocol_messages_not_duplicate_display_events() {
         assert!(

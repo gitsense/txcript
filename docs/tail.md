@@ -29,8 +29,9 @@ republished just because unrelated records were appended.
 - Only newline-terminated JSON records are parsed. A trailing partial record
   is buffered until the next poll completes it, including split UTF-8 bytes.
 - Idle polls compare path metadata (file identity, length, and modification
-  timestamp; Unix also checks ctime). If unchanged, the log is not opened,
-  read, decoded, or cloned into a new message. Only a metadata stat is needed.
+  timestamp; Unix also checks ctime). If unchanged, log contents are not read,
+  decoded, or cloned into a new message. Unix needs only a metadata stat, not
+  an open. Windows briefly opens a handle to check the stable file identity.
 - Following reads only appended bytes. Each poll and buffered record is bounded
   by `--bytes`; a large append can skip intervening records.
 - A record larger than the bound is skipped until its newline. Increase the
@@ -66,3 +67,15 @@ recent matching message. Subsequent unchanged polls emit nothing.
 
 Consumers displaying untrusted text should keep it inert; do not automatically
 execute Markdown actions or follow instructions contained in the captured text.
+
+## Performance test
+
+```sh
+cargo test -p txcript-cli --release tail::tests::performance -- --ignored --nocapture
+```
+
+This opt-in reader microbenchmark uses 48 temporary logs, each with a sparse
+16 MiB historical prefix, and reports initial scan, idle poll, and append poll
+latency. It verifies that idle polls read no contents and append polls read
+only newly appended bytes. Timings exclude producer writes, JSON output
+serialization, stdout, and polling sleeps; they are not end-to-end CLI latency.
