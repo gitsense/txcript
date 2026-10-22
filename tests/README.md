@@ -37,7 +37,8 @@ three contracts every harness must honor:
 
 `cli/tests/discovery.rs` runs the actual CLI against handcrafted Pi/Codex JSONL
 in temporary roots, with a cleared child environment. It checks native header
-IDs, backing paths, list-to-tail compatibility, and missing-store behavior.
+IDs, backing paths, list-to-tail compatibility, missing-store behavior, and the
+version handshake's schema and package-version consistency.
 On Unix, unrelated stores contain blocking FIFOs to prove scoped discovery does
 not open them; child processes have a deadline so regressions cannot hang CI.
 

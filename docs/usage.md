@@ -7,6 +7,7 @@
 Discover local sessions and continue one in any harness:
 
 ```sh
+txcript version [--format human|json]     # release identity and CLI contracts
 txcript harnesses [--format human|json]   # known canonical harness identifiers
 txcript list                             # local sessions across every harness
     [--from <harness>]                    #   only this harness's sessions
@@ -31,6 +32,8 @@ txcript export <id>[#range]              # write a session as a Simple document
     [--from <harness>]                    #   scope the id lookup to one harness
     [--out <file>]                        #   write to <file> instead of stdout
 ```
+
+`version --format json` provides the one-shot compatibility handshake for consumers such as gsc: schema version, package version, distribution, optional source commit, and supported contract identifiers. See the [GitSense sessions CLI contract](cli-contract.md) for the `gitsense.sessions.v1` guarantees and schemas. `--version` still prints the short package version.
 
 `harnesses` prints one canonical identifier per line by default, or a JSON array of strings with `--format json`. It uses the identifier registry without scanning sessions, probing installed tools, or contacting remote services. It is not a list of enabled build features or per-command capabilities: for example, `tail` supports only `pi` and `codex`.
 

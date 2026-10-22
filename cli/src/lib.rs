@@ -71,6 +71,7 @@ mod harnesses;
 pub mod mcp;
 mod pager;
 mod tail;
+mod version;
 mod view;
 
 pub const HARNESSES: &str = "harnesses: claude_code, claude_chat, chatgpt, codex, opencode, pi, campfire, cursor, cursor_desktop, grok, grok_bot, fx, hermes, \
@@ -108,6 +109,12 @@ pub enum Command {
     /// List known harness identifiers (not installed tools or per-command capabilities)
     Harnesses {
         /// Output format: human (one identifier per line) or json (array of strings)
+        #[arg(long, value_parser = ["human", "json"], default_value = "human")]
+        format: String,
+    },
+    /// Print release identity and supported CLI contracts
+    Version {
+        /// Output format: human (default) or json (compatibility handshake)
         #[arg(long, value_parser = ["human", "json"], default_value = "human")]
         format: String,
     },
@@ -381,6 +388,7 @@ pub fn run(cli: Cli) -> ExitCode {
     let result = match cli.command {
         Command::Session(command) => run_session(command, &options),
         Command::Harnesses { format } => harnesses::run(&format),
+        Command::Version { format } => version::run(&format),
         #[cfg(feature = "mcp")]
         Command::Mcp => tokio::runtime::Builder::new_current_thread()
             .enable_all()

@@ -2822,7 +2822,7 @@ dependencies = [
 
 [[package]]
 name = "txcript"
-version = "0.14.4"
+version = "0.15.0-gitsense.1"
 dependencies = [
  "aes",
  "base64",
@@ -2851,7 +2851,7 @@ dependencies = [
 
 [[package]]
 name = "txcript-cli"
-version = "0.14.4"
+version = "0.15.0-gitsense.1"
 dependencies = [
  "base64",
  "chrono",

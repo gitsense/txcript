@@ -140,6 +140,51 @@ fn missing_selected_store_does_not_fall_back_to_other_harnesses() {
     assert_eq!(sessions.list("codex").len(), 1);
 }
 
+#[test]
+fn version_handshake_matches_short_version_and_package_metadata() {
+    let sessions = Sessions::new();
+    let short = sessions.run(&["--version"]);
+    assert_eq!(
+        String::from_utf8(short.stdout).unwrap(),
+        format!("txcript {}\n", env!("CARGO_PKG_VERSION"))
+    );
+    let info: Value =
+        serde_json::from_slice(&sessions.run(&["version", "--format", "json"]).stdout).unwrap();
+    assert_eq!(info["schema_version"], 1);
+    assert_eq!(info["version"], env!("CARGO_PKG_VERSION"));
+    assert_eq!(info["distribution"], "gitsense");
+    assert_eq!(info["contracts"], json!(["gitsense.sessions.v1"]));
+    assert!(info.as_object().unwrap().contains_key("git_commit"));
+    let npm: Value = serde_json::from_str(include_str!("../../package.json")).unwrap();
+    assert_eq!(info["version"], npm["version"]);
+    for manifest in [
+        include_str!("../../Cargo.toml"),
+        include_str!("../Cargo.toml"),
+    ] {
+        let package_version = manifest
+            .lines()
+            .find_map(|line| line.strip_prefix("version = \""))
+            .unwrap()
+            .trim_end_matches('"');
+        assert_eq!(info["version"], package_version);
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn handshake_and_registry_do_not_open_session_stores() {
+    let sessions = Sessions::new();
+    blocking_log(&sessions.pi);
+    blocking_log(&sessions.codex);
+    let info: Value =
+        serde_json::from_slice(&sessions.run(&["version", "--format", "json"]).stdout).unwrap();
+    assert_eq!(info["schema_version"], 1);
+    let harnesses: Vec<String> =
+        serde_json::from_slice(&sessions.run(&["harnesses", "--format", "json"]).stdout).unwrap();
+    assert!(harnesses.iter().any(|name| name == "pi"));
+    assert!(harnesses.iter().any(|name| name == "codex"));
+}
+
 // A FIFO would block if discovery even opened the unrelated log. The parent
 // deadline kills/reaps a regressed child rather than hanging the test suite.
 #[cfg(unix)]
