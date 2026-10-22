@@ -622,16 +622,18 @@ mod tests {
         println!("{MIRRORS} mirrors, each with 16 MiB history; setup: {setup:?}");
         println!(
             "initial bounded scan: {:.2} us/mirror",
-            initial_time.as_secs_f64() * 1e6 / MIRRORS as f64
+            initial_time.as_secs_f64() * 1e6 / f64::from(u32::try_from(MIRRORS).unwrap())
         );
         println!(
             "idle: {:.2} us/poll ({} polls, zero content opens/reads)",
-            idle_time.as_secs_f64() * 1e6 / (MIRRORS * IDLE_ROUNDS) as f64,
+            idle_time.as_secs_f64() * 1e6
+                / f64::from(u32::try_from(MIRRORS * IDLE_ROUNDS).unwrap()),
             MIRRORS * IDLE_ROUNDS
         );
         println!(
             "append: {:.2} us/poll ({} polls, only appended bytes read)",
-            append_time.as_secs_f64() * 1e6 / (MIRRORS * APPEND_ROUNDS) as f64,
+            append_time.as_secs_f64() * 1e6
+                / f64::from(u32::try_from(MIRRORS * APPEND_ROUNDS).unwrap()),
             MIRRORS * APPEND_ROUNDS
         );
     }

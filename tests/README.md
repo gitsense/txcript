@@ -7,6 +7,7 @@ the category by what the test *proves*, not by what module it touches.
 |---|---|---|
 | Unit | `#[cfg(test)] mod tests` inline in `src/` and `cli/src/` | `cargo test --lib -p txcript -p txcript-cli` |
 | Integration | `tests/integration/` | `cargo test --test integration --all-features` |
+| CLI integration | `cli/tests/` | `cargo test -p txcript-cli --test discovery` |
 | Regression | `tests/regression/` | `cargo test --test regression --all-features` |
 | Benchmarks | `benches/` (criterion) | `cargo bench` |
 
@@ -33,6 +34,12 @@ three contracts every harness must honor:
   deterministic.
 - **Discovery**: session metadata (id, cwd, title, model, timestamp) is
   extracted correctly.
+
+`cli/tests/discovery.rs` runs the actual CLI against handcrafted Pi/Codex JSONL
+in temporary roots, with a cleared child environment. It checks native header
+IDs, backing paths, list-to-tail compatibility, and missing-store behavior.
+On Unix, unrelated stores contain blocking FIFOs to prove scoped discovery does
+not open them; child processes have a deadline so regressions cannot hang CI.
 
 Plus cross-cutting modules: `cross_harness` (a conversation survives a hop
 through every harness), `path_safety` (adversarial ids, symlinks, and

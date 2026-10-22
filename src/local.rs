@@ -78,10 +78,17 @@ pub fn discover() -> Vec<Session> {
 /// [`discover`], reporting progress: `on_store(harness, sessions_so_far)` is
 /// called before each store is scanned.
 ///
-/// One dispatch arm per harness; length grows with the harness count.
 #[must_use]
+pub fn discover_with(on_store: impl FnMut(HarnessId, usize)) -> Vec<Session> {
+    discover_local_with(None, on_store)
+}
+
+// Apply the scope before constructing/opening any store, not after scanning.
 #[allow(clippy::too_many_lines)]
-pub fn discover_with(mut on_store: impl FnMut(HarnessId, usize)) -> Vec<Session> {
+fn discover_local_with(
+    from: Option<HarnessId>,
+    mut on_store: impl FnMut(HarnessId, usize),
+) -> Vec<Session> {
     fn scan<S>(harness: HarnessId, store: Option<S>, out: &mut Vec<Session>)
     where
         S: Store<Ref = PathBuf>,
@@ -96,100 +103,90 @@ pub fn discover_with(mut on_store: impl FnMut(HarnessId, usize)) -> Vec<Session>
         }));
     }
 
-    let mut out: Vec<Session> = Vec::new();
-    on_store(HarnessId::ClaudeCode, out.len());
-    scan(
+    let mut out = Vec::new();
+    // Preserve aggregate store order; live web sources remain explicit-only.
+    let harnesses = [
         HarnessId::ClaudeCode,
-        claude_code::ClaudeStore::default_root(),
-        &mut out,
-    );
-    // Live web harnesses are deliberately excluded from aggregate discovery.
-    on_store(HarnessId::Codex, out.len());
-    scan(
         HarnessId::Codex,
-        codex::CodexStore::default_root(),
-        &mut out,
-    );
-    on_store(HarnessId::Pi, out.len());
-    scan(HarnessId::Pi, pi::PiStore::default_root(), &mut out);
-    on_store(HarnessId::Campfire, out.len());
-    scan(
+        HarnessId::Pi,
         HarnessId::Campfire,
-        campfire::CampfireStore::default_root(),
-        &mut out,
-    );
-    on_store(HarnessId::Cursor, out.len());
-    scan(
         HarnessId::Cursor,
-        cursor::CursorStore::default_root(),
-        &mut out,
-    );
-    on_store(HarnessId::Grok, out.len());
-    scan(HarnessId::Grok, grok::GrokStore::default_root(), &mut out);
-    on_store(HarnessId::GrokBot, out.len());
-    scan(
+        HarnessId::Grok,
         HarnessId::GrokBot,
-        grok_bot::GrokBotStore::default_root(),
-        &mut out,
-    );
-    on_store(HarnessId::Fx, out.len());
-    scan(HarnessId::Fx, fx::FxStore::default_root(), &mut out);
-    on_store(HarnessId::Amp, out.len());
-    scan(HarnessId::Amp, amp::AmpStore::default_root(), &mut out);
-    on_store(HarnessId::Antigravity, out.len());
-    scan(
+        HarnessId::Fx,
+        HarnessId::Amp,
         HarnessId::Antigravity,
-        antigravity::AntigravityStore::default_root(),
-        &mut out,
-    );
-    on_store(HarnessId::Cowork, out.len());
-    scan(
         HarnessId::Cowork,
-        cowork::CoworkStore::default_root(),
-        &mut out,
-    );
-
-    #[cfg(feature = "hermes")]
-    {
-        on_store(HarnessId::Hermes, out.len());
-        if let Some(store) = hermes::HermesStore::default_root() {
-            for d in store.discover().unwrap_or_default() {
-                out.push(Session {
-                    harness: HarnessId::Hermes,
-                    meta: d.meta,
-                    // The database doesn't surface a per-session mtime.
-                    updated_at: None,
-                    locator: Locator::Id(d.reference),
-                });
-            }
+        #[cfg(feature = "hermes")]
+        HarnessId::Hermes,
+        #[cfg(feature = "opencode")]
+        HarnessId::CursorDesktop,
+        #[cfg(feature = "opencode")]
+        HarnessId::OpenCode,
+    ];
+    for harness in harnesses {
+        if from.is_some_and(|selected| selected != harness) {
+            continue;
         }
-    }
-
-    #[cfg(feature = "opencode")]
-    {
-        on_store(HarnessId::CursorDesktop, out.len());
-        if let Some(store) = cursor_desktop::CursorDesktopStore::default_root() {
-            for d in store.discover().unwrap_or_default() {
-                out.push(Session {
-                    harness: HarnessId::CursorDesktop,
-                    meta: d.meta,
-                    // The database doesn't surface a per-session mtime.
-                    updated_at: None,
-                    locator: Locator::Id(d.reference),
-                });
+        on_store(harness, out.len());
+        match harness {
+            HarnessId::ClaudeCode => {
+                scan(harness, claude_code::ClaudeStore::default_root(), &mut out);
             }
-        }
-        on_store(HarnessId::OpenCode, out.len());
-        if let Some(store) = opencode::OpenCodeStore::default_db() {
-            for d in store.discover().unwrap_or_default() {
-                out.push(Session {
-                    harness: HarnessId::OpenCode,
-                    meta: d.meta,
-                    // The database doesn't surface a per-session mtime.
-                    updated_at: None,
-                    locator: Locator::Id(d.reference),
-                });
+            HarnessId::Codex => scan(harness, codex::CodexStore::default_root(), &mut out),
+            HarnessId::Pi => scan(harness, pi::PiStore::default_root(), &mut out),
+            HarnessId::Campfire => scan(harness, campfire::CampfireStore::default_root(), &mut out),
+            HarnessId::Cursor => scan(harness, cursor::CursorStore::default_root(), &mut out),
+            HarnessId::Grok => scan(harness, grok::GrokStore::default_root(), &mut out),
+            HarnessId::GrokBot => scan(harness, grok_bot::GrokBotStore::default_root(), &mut out),
+            HarnessId::Fx => scan(harness, fx::FxStore::default_root(), &mut out),
+            HarnessId::Amp => scan(harness, amp::AmpStore::default_root(), &mut out),
+            HarnessId::Antigravity => scan(
+                harness,
+                antigravity::AntigravityStore::default_root(),
+                &mut out,
+            ),
+            HarnessId::Cowork => scan(harness, cowork::CoworkStore::default_root(), &mut out),
+            #[cfg(feature = "hermes")]
+            HarnessId::Hermes => {
+                if let Some(store) = hermes::HermesStore::default_root() {
+                    for d in store.discover().unwrap_or_default() {
+                        out.push(Session {
+                            harness,
+                            meta: d.meta,
+                            updated_at: None,
+                            locator: Locator::Id(d.reference),
+                        });
+                    }
+                }
             }
+            #[cfg(feature = "opencode")]
+            HarnessId::CursorDesktop => {
+                if let Some(store) = cursor_desktop::CursorDesktopStore::default_root() {
+                    for d in store.discover().unwrap_or_default() {
+                        out.push(Session {
+                            harness,
+                            meta: d.meta,
+                            updated_at: None,
+                            locator: Locator::Id(d.reference),
+                        });
+                    }
+                }
+            }
+            #[cfg(feature = "opencode")]
+            HarnessId::OpenCode => {
+                if let Some(store) = opencode::OpenCodeStore::default_db() {
+                    for d in store.discover().unwrap_or_default() {
+                        out.push(Session {
+                            harness,
+                            meta: d.meta,
+                            updated_at: None,
+                            locator: Locator::Id(d.reference),
+                        });
+                    }
+                }
+            }
+            _ => unreachable!("only local stores are enumerated"),
         }
     }
 
@@ -212,7 +209,8 @@ fn sort_newest_first(sessions: &mut [Session]) {
 }
 
 /// Discover one harness, surfacing remote errors when a live source is
-/// explicitly requested. Other harnesses retain the tolerant aggregate scan.
+/// explicitly requested. Local discovery opens only the selected harness's
+/// store, retaining tolerant handling of unreadable local sessions.
 ///
 /// # Errors
 /// When the explicitly selected live backend rejects access or changes shape.
@@ -264,10 +262,7 @@ pub fn discover_harness(harness: HarnessId) -> Result<Vec<Session>> {
                 .to_string(),
         });
     }
-    Ok(discover()
-        .into_iter()
-        .filter(|session| session.harness == harness)
-        .collect())
+    Ok(discover_local_with(Some(harness), |_, _| {}))
 }
 
 /// The sessions a `--from` selection names: every local harness when
@@ -1186,7 +1181,28 @@ fn mismatch(harness: HarnessId) -> Error {
 
 #[cfg(test)]
 mod live_remote_gate_tests {
-    use super::{HarnessId, discover_scoped, discover_with};
+    use super::{HarnessId, discover_local_with, discover_scoped, discover_with};
+
+    #[test]
+    fn scoped_local_discovery_scans_only_the_selected_store() {
+        for selected in [HarnessId::Codex, HarnessId::Pi] {
+            let mut scanned = Vec::new();
+            let sessions = discover_local_with(Some(selected), |harness, count| {
+                scanned.push(harness);
+                assert_eq!(count, 0);
+            });
+            assert_eq!(scanned, [selected]);
+            assert!(sessions.iter().all(|session| session.harness == selected));
+        }
+    }
+
+    #[test]
+    fn interchange_scope_does_not_scan_any_store() {
+        let sessions = discover_local_with(Some(HarnessId::Simple), |_, _| {
+            panic!("an unsupported local scope must not open unrelated stores");
+        });
+        assert!(sessions.is_empty());
+    }
 
     #[test]
     fn aggregate_discovery_never_reaches_claude_chat() {

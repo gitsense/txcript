@@ -66,13 +66,14 @@ mod editpane;
 mod export;
 pub mod fragment;
 mod graphics;
+mod harnesses;
 #[cfg(feature = "mcp")]
 pub mod mcp;
 mod pager;
 mod tail;
 mod view;
 
-pub const HARNESSES: &str = "harnesses: claude_code, claude_chat, chatgpt, codex, opencode, pi, campfire, cursor, cursor_desktop, grok, fx, hermes, \
+pub const HARNESSES: &str = "harnesses: claude_code, claude_chat, chatgpt, codex, opencode, pi, campfire, cursor, cursor_desktop, grok, grok_bot, fx, hermes, \
      amp, antigravity, simple, cowork, cowork_remote";
 
 /// The `txcript` binary's command line.
@@ -104,6 +105,12 @@ pub struct Cli {
 pub enum Command {
     #[command(flatten)]
     Session(SessionCommand),
+    /// List known harness identifiers (not installed tools or per-command capabilities)
+    Harnesses {
+        /// Output format: human (one identifier per line) or json (array of strings)
+        #[arg(long, value_parser = ["human", "json"], default_value = "human")]
+        format: String,
+    },
     /// Serve the Model Context Protocol over stdin/stdout
     #[cfg(feature = "mcp")]
     Mcp,
@@ -373,6 +380,7 @@ pub fn run(cli: Cli) -> ExitCode {
     };
     let result = match cli.command {
         Command::Session(command) => run_session(command, &options),
+        Command::Harnesses { format } => harnesses::run(&format),
         #[cfg(feature = "mcp")]
         Command::Mcp => tokio::runtime::Builder::new_current_thread()
             .enable_all()
@@ -2179,11 +2187,7 @@ fn resume_workdir(cwd: Option<&str>) -> Option<PathBuf> {
 
 fn discover_with_spinner(from: Option<HarnessId>) -> Result<Vec<local::Session>, String> {
     let spinner = spin::Spinner::start("searching local sessions…");
-    let sessions = if matches!(
-        from,
-        Some(HarnessId::ClaudeChat | HarnessId::CoworkRemote | HarnessId::ChatGpt)
-    ) {
-        let harness = from.unwrap_or(HarnessId::ClaudeChat);
+    let sessions = if let Some(harness) = from {
         spinner.set(format!("reading {harness}…"));
         local::discover_harness(harness).map_err(|error| error.to_string())?
     } else {

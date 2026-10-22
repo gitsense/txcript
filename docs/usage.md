@@ -7,6 +7,7 @@
 Discover local sessions and continue one in any harness:
 
 ```sh
+txcript harnesses [--format human|json]   # known canonical harness identifiers
 txcript list                             # local sessions across every harness
     [--from <harness>]                    #   only this harness's sessions
     [--cwd <dir>]                         #   only sessions recorded under <dir>
@@ -31,7 +32,11 @@ txcript export <id>[#range]              # write a session as a Simple document
     [--out <file>]                        #   write to <file> instead of stdout
 ```
 
+`harnesses` prints one canonical identifier per line by default, or a JSON array of strings with `--format json`. It uses the identifier registry without scanning sessions, probing installed tools, or contacting remote services. It is not a list of enabled build features or per-command capabilities: for example, `tail` supports only `pi` and `codex`.
+
 A session id is any unambiguous prefix of the full id, or the session's exact title. When several copies share one id (Claude Code writes a second copy when a session is resumed from another directory), the most recently modified copy is used. `txcript resume` is an alias for `continue`. `--since` and `--until` take RFC 3339 timestamps or bare `YYYY-MM-DD` dates. `list --format json` emits machine-readable records with the harness, id, start time, backing-file modification time (`updated_at`), working directory, title/model when available, and backing path for file-based sessions. Human output remains the default.
+
+When `--from` selects a local harness, discovery scans only that harness's store. Without it, discovery scans all supported local stores. Live web sources remain explicit-only. This applies to session lookup as well as listing; Pi discovery still reads each candidate log for metadata.
 
 `continue` writes the session where the target harness keeps its sessions, then launches that harness on it, handing over the terminal:
 
