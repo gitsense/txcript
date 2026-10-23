@@ -9,6 +9,14 @@ Discover local sessions and continue one in any harness:
 ```sh
 txcript version [--format human|json]     # release identity and CLI contracts
 txcript harnesses [--format human|json]   # known canonical harness identifiers
+txcript show <id-or-prefix>              # metadata and latest normalized assistant text
+    [--from <harness>] [--format human|json]
+txcript observe <id-or-prefix>           # generic latest-assistant mirror snapshot
+    [--from <harness>] [--format human|json]
+    [--follow] [--interval-ms <ms>]       # local-disk full snapshot polling
+txcript messages <id-or-prefix>          # latest normalized user/assistant text history
+    [--from <harness>] [--role user|assistant]
+    [--limit <N>] [--format human|json]   # role filter before latest-N (default 50)
 txcript list                             # local sessions across every harness
     [--from <harness>]                    #   only this harness's sessions
     [--cwd <dir>]                         #   only sessions recorded under <dir>
@@ -34,6 +42,10 @@ txcript export <id>[#range]              # write a session as a Simple document
 ```
 
 `version --format json` provides the one-shot compatibility handshake for consumers such as gsc: schema version, package version, distribution, optional source commit, and supported contract identifiers. See the [GitSense sessions CLI contract](cli-contract.md) for the `gitsense.sessions.v1` guarantees and schemas. `--version` still prints the short package version.
+
+`show` and `observe` strictly match literal IDs, not titles or ranges, and reject same-ID copies across different sources. All readable local-disk native adapters in the build are supported; cloud scopes are rejected before network or credential access. Simple is not a discoverable session. Generic frames contain source metadata, nullable native message ID/timestamp, assistant content/role, a change token, and a normalized text-message count. Follow resolves once and emits only changed projections. This is full-transcript snapshot polling, not bounded reading; see the [generic mirror contract and limits](mirror.md).
+
+`messages` uses the same native readers and strict identity rules, filters roles before the latest-N selection, and returns chronological normalized text history. Its additive `gitsense.sessions.history.v1` contract is separate from mirrors. See the [history schema and output limits](history.md); this is not a bounded-input read or full-fidelity export.
 
 `harnesses` prints one canonical identifier per line by default, or a JSON array of strings with `--format json`. It uses the identifier registry without scanning sessions, probing installed tools, or contacting remote services. It is not a list of enabled build features or per-command capabilities: for example, `tail` supports only `pi` and `codex`.
 

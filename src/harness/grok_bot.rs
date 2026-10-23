@@ -819,6 +819,30 @@ impl GrokBotStore {
         }
     }
 
+    /// Load persisted local data only, without invoking gateway `openAgent`.
+    /// Used by read-only observers which must never implicitly contact a service.
+    ///
+    /// # Errors
+    /// The reference is invalid, local data cannot be read, or no local transcript exists.
+    pub fn load_local(&self, reference: &Path) -> Result<Transcript<GrokBot>> {
+        let id = Self::session_id(reference).ok_or_else(|| Error::Malformed {
+            harness: GrokBot::NAME,
+            detail: format!("cannot derive agent id from {}", reference.display()),
+        })?;
+        if let Some(transcript) = self.load_from_jsonl(&id)? {
+            return Ok(transcript);
+        }
+        if let Some(transcript) = self.load_from_store_db(&id)? {
+            return Ok(transcript);
+        }
+        Err(Error::Malformed {
+            harness: GrokBot::NAME,
+            detail: format!(
+                "no persisted local conversation for agent `{id}`; mirror does not invoke the gateway"
+            ),
+        })
+    }
+
     #[allow(clippy::unused_self, clippy::unnecessary_wraps)]
     fn load_from_gateway(&self, id: &str) -> Result<Option<Transcript<GrokBot>>> {
         #[cfg(any(feature = "opencode", feature = "hermes"))]

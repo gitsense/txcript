@@ -10,7 +10,7 @@ struct VersionInfo {
     version: &'static str,
     distribution: &'static str,
     git_commit: Option<&'static str>,
-    contracts: [&'static str; 1],
+    contracts: [&'static str; 3],
 }
 
 fn information() -> VersionInfo {
@@ -22,7 +22,11 @@ fn information() -> VersionInfo {
         // guess from the working directory at runtime or label dirty builds
         // with their parent commit. Ordinary local/archive builds use null.
         git_commit: option_env!("TXCRIPT_GIT_COMMIT").filter(|value| is_full_commit(value)),
-        contracts: ["gitsense.sessions.v1"],
+        contracts: [
+            "gitsense.sessions.v1",
+            "gitsense.sessions.mirror.v1",
+            "gitsense.sessions.history.v1",
+        ],
     }
 }
 
@@ -73,7 +77,11 @@ mod tests {
         assert_eq!(info["distribution"], "gitsense");
         assert_eq!(
             info["contracts"],
-            serde_json::json!(["gitsense.sessions.v1"])
+            serde_json::json!([
+                "gitsense.sessions.v1",
+                "gitsense.sessions.mirror.v1",
+                "gitsense.sessions.history.v1"
+            ])
         );
         assert!(info.as_object().unwrap().contains_key("git_commit"));
         assert!(

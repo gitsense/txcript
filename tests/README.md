@@ -7,7 +7,7 @@ the category by what the test *proves*, not by what module it touches.
 |---|---|---|
 | Unit | `#[cfg(test)] mod tests` inline in `src/` and `cli/src/` | `cargo test --lib -p txcript -p txcript-cli` |
 | Integration | `tests/integration/` | `cargo test --test integration --all-features` |
-| CLI integration | `cli/tests/` | `cargo test -p txcript-cli --test discovery` |
+| CLI integration | `cli/tests/` | `cargo test -p txcript-cli --tests` |
 | Regression | `tests/regression/` | `cargo test --test regression --all-features` |
 | Benchmarks | `benches/` (criterion) | `cargo bench` |
 
@@ -41,6 +41,15 @@ IDs, backing paths, list-to-tail compatibility, missing-store behavior, and the
 version handshake's schema and package-version consistency.
 On Unix, unrelated stores contain blocking FIFOs to prove scoped discovery does
 not open them; child processes have a deadline so regressions cannot hang CI.
+
+`cli/tests/mirror.rs` exercises generic show/observe/messages through all 14 local
+native adapters using synthetic persisted stores, including real temporary
+SQLite databases. It checks fixed-source follow, existing message-part edits
+through WAL, no idle duplicates, partial appends, identity mismatch, compressed
+archived Codex rollouts, strict ID ambiguity, role-before-limit history
+selection, chronological normalized order, and no-message/error distinctions.
+Remote codecs/transports use the existing library synthetic/local-HTTP tests;
+these CLI tests never use live credentials or customer transcripts.
 
 Plus cross-cutting modules: `cross_harness` (a conversation survives a hop
 through every harness), `path_safety` (adversarial ids, symlinks, and

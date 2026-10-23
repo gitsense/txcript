@@ -19,10 +19,10 @@ session discovery, remote access, or installed-tool probes:
 ```json
 {
   "schema_version": 1,
-  "version": "0.15.0-gitsense.1",
+  "version": "0.15.0-gitsense.3",
   "distribution": "gitsense",
   "git_commit": null,
-  "contracts": ["gitsense.sessions.v1"]
+  "contracts": ["gitsense.sessions.v1", "gitsense.sessions.mirror.v1", "gitsense.sessions.history.v1"]
 }
 ```
 
@@ -50,6 +50,23 @@ schema/contract, timeout, and nonzero exit should produce an actionable
 compatibility error rather than an implicit fallback. Bound subprocess output
 and diagnostics. Continue validating actual output frames: that is protocol
 validation, not feature probing.
+
+## Additive generic mirror contract
+
+`gitsense.sessions.mirror.v1` additionally guarantees strict ID-based `show`
+and `observe` across the readable local-disk native adapters in the build. It does not
+change the bounded Pi/Codex tail-v1 meanings below. See the [generic mirror
+contract](mirror.md) for frames, native metadata nullability, normalized order,
+full-snapshot polling cost, cloud rejection, and source-binding limits.
+Consumers check this additional contract in the same handshake, not by probing
+individual flags or assuming a package version range.
+
+`gitsense.sessions.history.v1` additionally guarantees normalized text history
+through `messages`, using the same strict resolver and read policy. See the
+[history contract](history.md) for role-before-limit selection, chronological
+normalized order, nullable native metadata, framing, and final-output budgets.
+It is independent of the mirror contract and does not add history guarantees
+to `gitsense.sessions.v1`.
 
 ## Harness identifiers
 

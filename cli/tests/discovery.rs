@@ -153,7 +153,14 @@ fn version_handshake_matches_short_version_and_package_metadata() {
     assert_eq!(info["schema_version"], 1);
     assert_eq!(info["version"], env!("CARGO_PKG_VERSION"));
     assert_eq!(info["distribution"], "gitsense");
-    assert_eq!(info["contracts"], json!(["gitsense.sessions.v1"]));
+    assert_eq!(
+        info["contracts"],
+        json!([
+            "gitsense.sessions.v1",
+            "gitsense.sessions.mirror.v1",
+            "gitsense.sessions.history.v1"
+        ])
+    );
     assert!(info.as_object().unwrap().contains_key("git_commit"));
     let npm: Value = serde_json::from_str(include_str!("../../package.json")).unwrap();
     assert_eq!(info["version"], npm["version"]);

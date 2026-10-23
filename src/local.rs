@@ -412,6 +412,82 @@ impl Session {
         }
     }
 
+    /// Load a snapshot for a read-only mirror. Unlike [`Self::read`], Grok Bot
+    /// never falls back to opening an agent through its gateway. Cloud sources
+    /// are rejected before credential access or network requests.
+    ///
+    /// # Errors
+    /// The session cannot be loaded or its native identity no longer matches.
+    pub fn read_for_mirror(&self) -> Result<Transcript<Common>> {
+        if matches!(
+            self.harness,
+            HarnessId::ClaudeChat | HarnessId::CoworkRemote | HarnessId::ChatGpt
+        ) {
+            return Err(Error::Unconvertible {
+                harness: "mirror",
+                detail: "local-disk sessions only; cloud sources are unsupported".into(),
+            });
+        }
+        // A vanished bound source is an error, not an empty conversation or
+        // permission to fall back to a different discovered session.
+        if let Some(path) = self.source_path() {
+            std::fs::metadata(path)?;
+        }
+        let common = match (&self.harness, &self.locator) {
+            (HarnessId::GrokBot, Locator::Path(path)) => {
+                let store = required(grok_bot::GrokBotStore::default_root())?;
+                grok_bot::GrokBot::to_common(&store.load_local(path)?)?
+            }
+            _ => self.read()?,
+        };
+        if common.meta.id != self.meta.id {
+            return Err(Error::Malformed {
+                harness: "mirror",
+                detail: format!(
+                    "source identity changed: expected {} {}, found {}",
+                    self.harness, self.meta.id, common.meta.id
+                ),
+            });
+        }
+        Ok(common)
+    }
+
+    /// A stable comparison key for the discovered binding, not a replay cursor
+    /// or authorization token. Includes remote organization identity when known.
+    #[must_use]
+    pub fn binding_key(&self) -> String {
+        let locator = match &self.locator {
+            Locator::Path(path) => std::fs::canonicalize(path)
+                .unwrap_or_else(|_| path.clone())
+                .to_string_lossy()
+                .into_owned(),
+            #[cfg(feature = "cowork_remote")]
+            Locator::CoworkRemote(reference) => {
+                format!("{}:{}", reference.organization_uuid, reference.session_id)
+            }
+            #[cfg(feature = "claude_chat")]
+            Locator::ClaudeChatRemote(reference) => reference.key(),
+            #[cfg(feature = "chatgpt")]
+            Locator::ChatGptRemote(reference) => reference.key(),
+            #[cfg(any(feature = "opencode", feature = "hermes"))]
+            Locator::Id(id) => id.clone(),
+        };
+        format!("{}\0{}\0{locator}", self.harness, self.meta.id)
+    }
+
+    /// Pin a path locator to its current canonical target before observing it.
+    /// Does not prevent in-place changes or authenticate the source.
+    ///
+    /// # Errors
+    /// A file-backed locator cannot be canonicalized.
+    #[allow(irrefutable_let_patterns)] // Featureless builds have only path locators.
+    pub fn pin_path(&mut self) -> Result<()> {
+        if let Locator::Path(path) = &mut self.locator {
+            *path = std::fs::canonicalize(&path)?;
+        }
+        Ok(())
+    }
+
     /// Remove the session from its harness (see [`Store::delete`] for what
     /// removal means per backend).
     ///

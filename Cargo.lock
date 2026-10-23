@@ -2822,7 +2822,7 @@ dependencies = [
 
 [[package]]
 name = "txcript"
-version = "0.15.0-gitsense.1"
+version = "0.15.0-gitsense.3"
 dependencies = [
  "aes",
  "base64",
@@ -2851,7 +2851,7 @@ dependencies = [
 
 [[package]]
 name = "txcript-cli"
-version = "0.15.0-gitsense.1"
+version = "0.15.0-gitsense.3"
 dependencies = [
  "base64",
  "chrono",
@@ -2869,6 +2869,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
+ "sha2",
  "tempfile",
  "terminal_size",
  "tokio",
@@ -2877,6 +2878,7 @@ dependencies = [
  "unicode-width",
  "uuid",
  "vt100",
+ "zstd",
 ]
 
 [[package]]

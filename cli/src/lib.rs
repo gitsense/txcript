@@ -69,6 +69,7 @@ mod graphics;
 mod harnesses;
 #[cfg(feature = "mcp")]
 pub mod mcp;
+mod mirror;
 mod pager;
 mod tail;
 mod version;
@@ -154,6 +155,51 @@ pub enum SessionCommand {
         until: Option<chrono::DateTime<chrono::Utc>>,
         /// Output format: human (default) or json
         #[arg(long, value_name = "FORMAT", default_value = "human")]
+        format: String,
+    },
+    /// Resolve a native session and show metadata plus its latest assistant text
+    Show {
+        /// Literal session ID or unambiguous ID prefix (never a title)
+        id: String,
+        /// Search only this local harness (cloud sources unsupported)
+        #[arg(long, value_name = "HARNESS", value_parser = HarnessParser)]
+        from: Option<HarnessId>,
+        /// Output format: human or json
+        #[arg(long, value_parser = ["human", "json"], default_value = "human")]
+        format: String,
+    },
+    /// Observe latest normalized assistant text across native harnesses
+    Observe {
+        /// Literal session ID or unambiguous ID prefix (never a title)
+        id: String,
+        /// Search only this local harness (cloud sources unsupported)
+        #[arg(long, value_name = "HARNESS", value_parser = HarnessParser)]
+        from: Option<HarnessId>,
+        /// Output format: human or json (JSONL when following)
+        #[arg(long, value_parser = ["human", "json"], default_value = "human")]
+        format: String,
+        /// Follow with full normalized snapshot polling (not bounded suffix reads)
+        #[arg(long)]
+        follow: bool,
+        /// Poll cadence; minimum 100 milliseconds
+        #[arg(long, default_value_t = 1000)]
+        interval_ms: u64,
+    },
+    /// Read the latest normalized user/assistant text messages across native harnesses
+    Messages {
+        /// Literal session ID or unambiguous ID prefix (never a title)
+        id: String,
+        /// Search only this local harness (cloud sources unsupported)
+        #[arg(long, value_name = "HARNESS", value_parser = HarnessParser)]
+        from: Option<HarnessId>,
+        /// Filter by role before selecting the latest messages
+        #[arg(long, value_parser = ["user", "assistant"])]
+        role: Option<String>,
+        /// Maximum matching text messages, oldest first within the selection (1..10000)
+        #[arg(long, short = 'n', default_value_t = 50)]
+        limit: usize,
+        /// Output format: human or json
+        #[arg(long, value_parser = ["human", "json"], default_value = "human")]
         format: String,
     },
     /// Continue a session, then launch its harness
@@ -436,6 +482,21 @@ pub fn run_session(command: SessionCommand, options: &Options) -> Result<ExitCod
             cmd_list(from, cwd.as_deref(), limit, since, until, &format)?;
             Ok(ExitCode::SUCCESS)
         }
+        SessionCommand::Messages {
+            id,
+            from,
+            role,
+            limit,
+            format,
+        } => mirror::run_history(&id, from, role.as_deref(), limit, &format),
+        SessionCommand::Show { id, from, format } => mirror::run(&id, from, &format, false, 1000),
+        SessionCommand::Observe {
+            id,
+            from,
+            format,
+            follow,
+            interval_ms,
+        } => mirror::run(&id, from, &format, follow, interval_ms),
         SessionCommand::Continue {
             id,
             with,
