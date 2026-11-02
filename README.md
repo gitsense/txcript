@@ -1,6 +1,4 @@
-> **GitSense fork notice:** GitSense maintains this fork with additional
-> machine-readable session metadata support used by GitSense Chat. These changes
-> are intended to be contributed back to the upstream txcript project.
+> **GitSense fork:** This repository is a fork of [skillsynchq/txcript](https://github.com/skillsynchq/txcript), maintained for integration with [GitSense CLI (`gsc`)](https://github.com/gitsense/gsc-cli) and GitSense Chat. See [GitSense integration](#gitsense-integration) for the connection and compatibility requirements.
 
 <p align="center">
   <picture>
@@ -72,6 +70,12 @@ txcript tail /absolute/rollout.jsonl --from codex --bytes 65536 --follow
 
 Read a bounded suffix, then follow appended records as changed-message JSONL.
 No imports, conversions, or full-session scan. See [tail semantics and limits](docs/tail.md).
+
+## GitSense integration
+
+[GitSense CLI](https://github.com/gitsense/gsc-cli) uses this fork's `txcript` executable to discover native agent sessions and read or follow normalized session text. Its `gsc sessions capture` command also polls txcript's history API to retain best-effort user and assistant text for agent monitoring. GitSense Chat builds on `gsc`; `txcript` handles harness-specific storage and transcript formats, while `gsc` manages captures and other GitSense workflows. The tools can also be used independently.
+
+For `gsc sessions` native-session commands, install a compatible GitSense fork binary on `PATH` from the [fork releases](https://github.com/gitsense/txcript/releases) or using the source command above. `gsc` checks `txcript version --format json` for the required contract; history requires `gitsense.sessions.history.v1` (introduced in `0.15.0-gitsense.3`). The published crates.io and npm packages linked below are upstream packages, not this fork's CLI compatibility guarantee. See the [CLI contract](docs/cli-contract.md), [mirror](docs/mirror.md), and [history](docs/history.md) documentation.
 
 ## Use the library
 
